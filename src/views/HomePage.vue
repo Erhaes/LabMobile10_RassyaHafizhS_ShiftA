@@ -203,13 +203,37 @@ const getRelativeTime = (date: any) => {
 };
 
 // fungsi handleRefresh dan handleSubmit akan didefinisikan nanti
-const handleRefresh = (event:any)=>{
+const handleRefresh = async (event: any) => {
+  try {
+    await loadTodos(false);
+  } catch (error) {
+    console.error('Error refreshing:', error);
+  } finally {
+    event.target.complete();
+  }
+};
 
-}
-
-const handleSubmit = ()=>{
-
-}
+const handleSubmit = async (todo: Omit<Todo, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
+  if (!todo.title) {
+    await showToast('Title is required', 'warning', warningOutline);
+    return;
+  }
+  try {
+    if (editingId.value) {
+      await firestoreService.updateTodo(editingId.value, todo as Todo);
+      await showToast('Todo updated successfully', 'success', checkmarkCircle);
+    } else {
+      await firestoreService.addTodo(todo as Todo);
+      await showToast('Todo added successfully', 'success', checkmarkCircle);
+    }
+    loadTodos();
+  } catch (error) {
+    await showToast('An error occurred', 'danger', closeCircle);
+    console.error(error);
+  } finally {
+    editingId.value = null;
+  }
+};
 
 // load data
 const loadTodos = async (isLoading = true) => {
@@ -245,39 +269,6 @@ onUnmounted(() => {
   clearInterval(intervalId);
 });
 
-// handle swipe refresher
-const handleRefresh = async (event: any) => {
-  try {
-    await loadTodos(false);
-  } catch (error) {
-    console.error('Error refreshing:', error);
-  } finally {
-    event.target.complete();
-  }
-};
-
-// handle submit add/edit pada modal
-const handleSubmit = async (todo: Omit<Todo, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
-  if (!todo.title) {
-    await showToast('Title is required', 'warning', warningOutline);
-    return;
-  }
-  try {
-    if (editingId.value) {
-      await firestoreService.updateTodo(editingId.value, todo as Todo);
-      await showToast('Todo updated successfully', 'success', checkmarkCircle);
-    } else {
-      await firestoreService.addTodo(todo as Todo);
-      await showToast('Todo added successfully', 'success', checkmarkCircle);
-    }
-    loadTodos();
-  } catch (error) {
-    await showToast('An error occurred', 'danger', closeCircle);
-    console.error(error);
-  } finally {
-    editingId.value = null;
-  }
-};
 
 // handle edit click
 const handleEdit = async (editTodo: Todo) => {
